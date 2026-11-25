@@ -1,17 +1,19 @@
-"""
-YouTube Downloader - local web app built on yt-dlp + ffmpeg.
-
-Run:  python app.py      then open http://127.0.0.1:5000
-Only download content you own or have permission to download.
-"""
+import hmac
 import os
+import secrets
+import socket
 import sys
 import threading
 import webbrowser
+from urllib.parse import urlparse
 
 from flask import Flask, jsonify, render_template, request, send_file
 
 import engine
+
+LAN = "--lan" in sys.argv or os.environ.get("ANYSAVE_LAN") == "1"
+HOST = os.environ.get("HOST", "0.0.0.0" if LAN else "127.0.0.1")
+TOKEN = os.environ.get("ANYSAVE_TOKEN") or (secrets.token_hex(3).upper() if HOST != "127.0.0.1" else "")
 
 app = Flask(__name__)
 manager = engine.Manager()
@@ -21,6 +23,51 @@ def bad(msg, code=400):
     return jsonify(error=msg), code
 
 
+@app.before_request
+def require_code_from_other_devices():
+    if not request.path.startswith("/api/") or not TOKEN:
+        return None
+    if request.remote_addr in ("127.0.0.1", "::1"):
+        return None
+    given = request.headers.get("X-AnySave-Token") or request.args.get("token") or ""
+    if not hmac.compare_digest(given.strip().upper(), TOKEN.upper()):
+        return bad("Wrong or missing access code. It's shown in the terminal where AnySave runs.", 401)
+    return None
+
+
+def free_port(start):
+    for port in range(start, start + 20):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((HOST, port))
+                return port
+            except OSError:
+                print(f"Port {port} is in use by another program, trying {port + 1}")
+    return start
+
+
+def lan_ip():
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("10.255.255.255", 1))
+            return s.getsockname()[0]
+    except OSError:
+        return "your-computer-ip"
+
+
+def link_problem(url):
+    if not url:
+        return "Please paste a link."
+    p = urlparse(url)
+    if p.scheme not in ("http", "https") or not p.netloc:
+        return "Please paste a full link that starts with http:// or https://"
+    host = p.netloc.lower().split(":")[0]
+    if host == "wa.me" or host.endswith((".whatsapp.com", ".wa.me")) or host == "whatsapp.com":
+        return ("WhatsApp videos live inside your chats and have no public link, so they can't be "
+                "downloaded from a URL. In WhatsApp, open the video and use Save or Share instead.")
+    return None
+
+
 @app.get("/")
 def index():
     return render_template("index.html")
@@ -28,17 +75,18 @@ def index():
 
 @app.get("/api/status")
 def api_status():
-    return jsonify(ffmpeg=bool(engine.FFMPEG), download_dir=engine.DOWNLOAD_DIR,
+    return jsonify(app="AnySave", api=1, ffmpeg=bool(engine.FFMPEG), download_dir=engine.DOWNLOAD_DIR,
                    max_active=engine.MAX_ACTIVE_JOBS)
 
 
 @app.post("/api/info")
 def api_info():
-    url = (request.json or {}).get("url", "").strip()
-    if not url:
-        return bad("Please paste a link.")
+    body = request.json or {}
+    url = (body.get("url") or "").strip()
+    if link_problem(url):
+        return bad(link_problem(url))
     try:
-        return jsonify(engine.video_info(url))
+        return jsonify(engine.video_info(url, playlist=bool(body.get("playlist"))))
     except Exception as e:
         return bad(engine.clean_error(e))
 
@@ -48,8 +96,8 @@ def api_download():
     d = request.json or {}
     url = (d.get("url") or "").strip()
     mode = d.get("mode", "both")
-    if not url:
-        return bad("Please paste a link.")
+    if link_problem(url):
+        return bad(link_problem(url))
     if mode not in ("both", "video", "audio"):
         return bad("Unknown mode.")
     try:
@@ -109,6 +157,8 @@ def api_action(job_id, action):
         return err
     if job.status != "done" or not job.path or not os.path.exists(job.path):
         return bad("The file is not there any more.", 404)
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return bad("Open and Show in Finder only work on the computer running AnySave.", 403)
     if action == "reveal":
         engine.reveal(job.path)
     elif action == "open":
@@ -129,12 +179,19 @@ def api_file(job_id):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = free_port(int(os.environ.get("PORT", 8750)))
     if not engine.FFMPEG:
         print("WARNING: ffmpeg not found. High quality video and audio conversion "
               "will not work. See README.md.", file=sys.stderr)
     print(f"Files are saved in: {engine.DOWNLOAD_DIR}")
     print(f"Open http://127.0.0.1:{port} in your browser")
+    if HOST != "127.0.0.1":
+        print()
+        print("Phone apps / other devices on your Wi-Fi:")
+        print(f"  Server address: http://{lan_ip()}:{port}")
+        print(f"  Access code:    {TOKEN}")
+        print(f"  Browser link:   http://{lan_ip()}:{port}/?token={TOKEN}")
+        print()
     if os.environ.get("NO_BROWSER") != "1":
         threading.Timer(1.0, lambda: webbrowser.open(f"http://127.0.0.1:{port}")).start()
-    app.run(host="127.0.0.1", port=port, debug=False, threaded=True)
+    app.run(host=HOST, port=port, debug=False, threaded=True)

@@ -1,16 +1,3 @@
-"""
-Download engine.
-
-Speed trick: instead of one long HTTP stream (which YouTube throttles per
-connection), each file is split into pieces of 1-8 MB and fetched over many
-connections at once with HTTP Range requests, the way a torrent client or
-download manager does. Pieces are written straight into place in a
-pre-allocated file, retried on failure, and shown live in the UI.
-
-If a stream can't be fetched that way (HLS/DASH fragments, servers without
-Range support, repeated errors) the job falls back to yt-dlp's own
-downloader with concurrent fragment downloads.
-"""
 import os
 import platform
 import re
@@ -20,19 +7,20 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, deque
+from urllib.parse import parse_qs, urlparse
 
 import requests
 import yt_dlp
 
 FFMPEG = shutil.which("ffmpeg")
 DOWNLOAD_DIR = os.path.expanduser(
-    os.environ.get("DOWNLOAD_DIR", os.path.join("~", "Downloads", "YouTube Downloader")))
+    os.environ.get("DOWNLOAD_DIR", os.path.join("~", "Downloads", "AnySave")))
 TMP_DIR = os.path.join(DOWNLOAD_DIR, ".partial")
 MAX_ACTIVE_JOBS = int(os.environ.get("MAX_ACTIVE_JOBS", 2))
 PIECE_MIN, PIECE_MAX = 1 << 20, 8 << 20
 READ_SIZE = 256 * 1024
 
-AUDIO_CODECS = {  # target -> (ffmpeg codec, extension, uses bitrate)
+AUDIO_CODECS = {
     "mp3": ("libmp3lame", "mp3", True),
     "m4a": ("aac", "m4a", True),
     "opus": ("libopus", "opus", True),
@@ -46,24 +34,104 @@ class Cancelled(Exception):
 
 
 def base_opts():
-    return {"quiet": True, "no_warnings": True, "noplaylist": True}
+    return {"quiet": True, "no_warnings": True, "noplaylist": True,
+            "allow_unplayable_formats": False}
 
 
 def clean_error(e):
     msg = re.sub(r"\x1b\[[0-9;]*m", "", str(e)).replace("ERROR: ", "")
+    low = msg.lower()
+    if "unsupported url" in low:
+        return "This site isn't supported, or the link doesn't point to a video."
+    if any(k in low for k in ("login", "log in", "sign in", "private", "cookies", "rate-limit reached")):
+        return "This video is private or needs a login, so it can't be downloaded here."
+    if "drm" in low:
+        return "This video is DRM-protected and can't be downloaded."
+    if "no video could be found" in low or "no video formats" in low:
+        return "There's no video in this post."
     return msg.split("; please report")[0][:400]
+
+
+MULTI_POST_SITES = ("instagram", "twitter", "facebook", "bluesky", "reddit", "tiktok",
+                    "pinterest", "linkedin")
+
+
+def is_multi_post(info):
+    key = (info.get("extractor_key") or info.get("extractor") or "").lower()
+    return any(k in key for k in MULTI_POST_SITES)
+
+
+def playlist_url_for(url):
+    p = urlparse(url)
+    host = p.netloc.lower()
+    if not (host.endswith("youtube.com") or host.endswith("youtu.be")):
+        return None
+    lst = parse_qs(p.query).get("list", [None])[0]
+    if not lst or lst.startswith("RD") or "/playlist" in p.path:
+        return None
+    return f"https://www.youtube.com/playlist?list={lst}"
+
+
+def _thumb(e):
+    if e.get("thumbnail"):
+        return e["thumbnail"]
+    thumbs = [t for t in (e.get("thumbnails") or []) if t.get("url")]
+    return thumbs[-1]["url"] if thumbs else None
+
+
+def playlist_info(info):
+    entries = []
+    for e in info.get("entries") or []:
+        if not e:
+            continue
+        link = e.get("url") or e.get("webpage_url")
+        if link and not link.startswith("http") and (e.get("ie_key") or "").lower().startswith("youtube"):
+            link = f"https://www.youtube.com/watch?v={e.get('id') or link}"
+        if not link or not link.startswith("http"):
+            continue
+        title = e.get("title") or link
+        if title in ("[Private video]", "[Deleted video]"):
+            continue
+        entries.append({"url": link, "title": title, "duration": e.get("duration"),
+                        "thumbnail": _thumb(e)})
+    if not entries:
+        raise ValueError("This playlist has no videos that can be downloaded.")
+    return {
+        "type": "playlist",
+        "title": info.get("title") or "Playlist",
+        "site": info.get("extractor_key") or info.get("extractor"),
+        "uploader": info.get("uploader") or info.get("channel"),
+        "count": len(entries),
+        "entries": entries,
+        "thumbnail": _thumb(info) or entries[0]["thumbnail"],
+        "ffmpeg": bool(FFMPEG),
+    }
+
+
+def single_video(info):
+    if info.get("_type") != "playlist":
+        return info
+    key = (info.get("extractor_key") or info.get("extractor") or "").lower()
+    entries = [e for e in (info.get("entries") or []) if e]
+    if entries and any(k in key for k in MULTI_POST_SITES):
+        return entries[0]
+    raise ValueError("That is a playlist or channel link. Paste a link to a single video.")
 
 
 def fsize(f):
     return (f or {}).get("filesize") or (f or {}).get("filesize_approx")
 
 
-# --------------------------------------------------------------------- info
-def video_info(url):
-    with yt_dlp.YoutubeDL(base_opts()) as ydl:
-        info = ydl.extract_info(url, download=False)
+def video_info(url, playlist=False):
+    target = (playlist_url_for(url) or url) if playlist else url
+    opts = base_opts() | {"extract_flat": "in_playlist"}
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(target, download=False)
     if info.get("_type") == "playlist":
-        raise ValueError("That is a playlist link. Paste a single video link.")
+        if not is_multi_post(info):
+            return playlist_info(info)
+        with yt_dlp.YoutubeDL(base_opts()) as ydl:
+            info = single_video(ydl.extract_info(url, download=False))
 
     formats = info.get("formats") or []
     vids = [f for f in formats if f.get("vcodec") not in (None, "none") and f.get("height")]
@@ -96,6 +164,7 @@ def video_info(url):
         })
     return {
         "title": info.get("title"),
+        "site": info.get("extractor_key") or info.get("extractor"),
         "uploader": info.get("uploader") or info.get("channel"),
         "duration": info.get("duration"),
         "view_count": info.get("view_count"),
@@ -103,6 +172,9 @@ def video_info(url):
         "qualities": qualities,
         "audio_size": fsize(best_a),
         "ffmpeg": bool(FFMPEG),
+        "type": "video",
+        "url": info.get("webpage_url") or url,
+        "playlist_url": None if playlist else playlist_url_for(url),
     }
 
 
@@ -117,7 +189,7 @@ def format_spec(mode, height, compat, audio_format):
     if mode == "video":
         avc = f"bestvideo[vcodec^=avc]{h}/" if compat else ""
         return f"{avc}bestvideo{h}/bestvideo/best{h}/best"
-    if not FFMPEG:  # can't merge: take a pre-merged stream
+    if not FFMPEG:
         return f"best{h}[acodec!=none][vcodec!=none]/best"
     if compat:
         return (f"bestvideo[vcodec^=avc]{h}+bestaudio[ext=m4a]/"
@@ -125,13 +197,12 @@ def format_spec(mode, height, compat, audio_format):
     return f"bestvideo{h}+bestaudio/best{h}/best"
 
 
-# --------------------------------------------------------------------- jobs
 class Part:
     def __init__(self, kind, fmt, path):
         self.kind, self.fmt, self.path = kind, fmt, path
         self.size = 0
         self.done = 0
-        self.pieces = []  # [start, end, state]  state: 0 waiting, 1 active, 2 done
+        self.pieces = []
 
     def snapshot(self):
         return {"kind": self.kind, "size": self.size, "done": self.done,
@@ -151,7 +222,7 @@ class Job:
         self.title = req.get("title") or self.url
         self.thumbnail = req.get("thumbnail")
         self.label = ""
-        self.status = "queued"  # queued preparing downloading processing done error cancelled
+        self.status = "queued"
         self.message = "Waiting for a free slot"
         self.engine = "parallel"
         self.parts = []
@@ -165,7 +236,6 @@ class Job:
         self._samples = deque()
         self._speed = 0.0
 
-    # live numbers for the UI
     def snapshot(self):
         with self.lock:
             done = sum(p.done for p in self.parts)
@@ -234,7 +304,6 @@ class Manager:
         return False
 
 
-# --------------------------------------------------------------------- pipeline
 def run_job(job):
     tmp = os.path.join(TMP_DIR, job.id)
     os.makedirs(tmp, exist_ok=True)
@@ -242,7 +311,7 @@ def run_job(job):
         job.set(status="preparing", message="Finding the best streams")
         opts = base_opts() | {"format": format_spec(job.mode, job.height, job.compat, job.audio_format)}
         with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(job.url, download=False)
+            info = single_video(ydl.extract_info(job.url, download=False))
         job.check()
         fmts = info.get("requested_formats") or [info]
         parts = []
@@ -259,7 +328,7 @@ def run_job(job):
                 parallel_download(job, parts)
             except Cancelled:
                 raise
-            except Exception as e:  # fall back to yt-dlp's downloader
+            except Exception as e:
                 print(f"[{job.id}] parallel download failed ({clean_error(e)}), using yt-dlp")
                 ytdlp_download(job, info, parts)
         else:
@@ -302,7 +371,6 @@ def _label(job, fmts):
     return f"{q} · {codec or 'MP4'}" + (" · no audio" if job.mode == "video" else "")
 
 
-# ---- parallel piece downloader
 def _probe_size(sess, f):
     r = sess.get(f["url"], headers={**(f.get("http_headers") or {}), "Range": "bytes=0-0"},
                  stream=True, timeout=(10, 20))
@@ -397,7 +465,6 @@ def _fetch_piece(job, sess, handles, p, i):
             time.sleep(0.5 * 2 ** attempt)
 
 
-# ---- fallback: yt-dlp downloader (HLS/DASH, odd servers)
 def ytdlp_download(job, info, parts):
     job.set(engine="yt-dlp")
     for p in parts:
@@ -432,7 +499,6 @@ def ytdlp_download(job, info, parts):
             p.pieces = [[0, 0, 2]] * max(1, len(p.pieces))
 
 
-# ---- ffmpeg finishing step
 def _ffmpeg(job, args, duration, message):
     job.set(status="processing", message=message, post_progress=0)
     cmd = [FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-nostats",
@@ -459,7 +525,6 @@ def postprocess(job, parts, info):
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
     def dest(ext):
-        # reserve a unique name right away so two jobs finishing together can't collide
         base = os.path.join(DOWNLOAD_DIR, f"{name} [{tag}]")
         path, n = f"{base}.{ext}", 1
         while True:
@@ -503,7 +568,6 @@ def postprocess(job, parts, info):
     return out
 
 
-# --------------------------------------------------------------------- desktop helpers
 def reveal(path):
     system = platform.system()
     if system == "Darwin":
@@ -519,6 +583,6 @@ def open_file(path):
     if system == "Darwin":
         subprocess.Popen(["open", path])
     elif system == "Windows":
-        os.startfile(path)  # noqa
+        os.startfile(path)
     else:
         subprocess.Popen(["xdg-open", path])

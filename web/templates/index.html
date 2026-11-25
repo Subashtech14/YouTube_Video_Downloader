@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YouTube Downloader</title>
+<title>AnySave</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ef4444'/%3E%3Cpath d='M16 8v12m0 0-5-5m5 5 5-5M9 24h14' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{
   --bg:#f5f6f8; --surface:#ffffff; --surface-2:#f0f2f5; --line:#e3e6eb; --text:#14161a; --muted:#69707d;
-  --accent:#ef4444; --accent-2:#f97316; --accent-soft:rgba(239,68,68,.10); --on-accent:#fff;
+  --site:#6d5efc; --accent:var(--site); --accent-2:color-mix(in srgb,var(--site) 70%,#f59e0b); --accent-soft:color-mix(in srgb,var(--site) 11%,transparent); --on-accent:#fff;
   --ok:#16a34a; --ok-soft:rgba(22,163,74,.12); --err:#dc2626; --err-soft:rgba(220,38,38,.10);
   --piece-wait:#e3e6eb; --piece-active:#f59e0b; --piece-done:#22c55e;
   --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06); --radius:16px;
@@ -16,7 +16,7 @@
 @media (prefers-color-scheme:dark){
   :root{
     --bg:#0b0d10; --surface:#14171c; --surface-2:#1b1f26; --line:#262b33; --text:#eceef1; --muted:#8b93a1;
-    --accent-soft:rgba(239,68,68,.16); --ok-soft:rgba(34,197,94,.14); --err-soft:rgba(248,113,113,.14);
+    --accent-soft:color-mix(in srgb,var(--site) 18%,transparent); --ok-soft:rgba(34,197,94,.14); --err-soft:rgba(248,113,113,.14);
     --piece-wait:#262b33; --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35);
   }
 }
@@ -30,10 +30,9 @@ button:disabled{cursor:default;opacity:.5}
 .muted{color:var(--muted)}
 svg.i{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-/* top bar */
 .top{display:flex;align-items:center;gap:12px;padding:18px 0}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-.01em}
-.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.35)}
+.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--site) 35%,transparent)}
 .spacer{flex:1}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
 .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
@@ -41,7 +40,6 @@ svg.i{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .iconbtn{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
 .iconbtn:hover{background:var(--surface-2)}
 
-/* hero */
 .hero{padding:26px 0 18px;text-align:center}
 .hero h1{font-size:34px;line-height:1.15;letter-spacing:-.03em;margin:0 0 8px}
 .hero h1 span{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -56,9 +54,21 @@ svg.i{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .btn-primary:hover:not(:disabled){filter:brightness(1.07)}
 .btn-lg{padding:13px 22px;font-size:15.5px;border-radius:12px}
 .hint{margin-top:10px;font-size:13px;min-height:20px}
+
+.tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 18px}
+.tab{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;font-weight:500;color:var(--text)}
+.tab:hover{background:var(--surface-2)}
+.tab .tdot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.tab[aria-selected=true]{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c);font-weight:650}
+.tips{list-style:none;margin:10px 0 0;padding:0;font-size:13px;color:var(--muted);text-align:left;display:flex;flex-wrap:wrap;gap:4px 18px;justify-content:center}
+.tips li::before{content:"•";color:var(--accent);margin-right:6px}
+.switch{margin-top:10px;font-size:13.5px}
+.switch button{margin-left:8px;padding:5px 11px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.wa{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;text-align:left;box-shadow:var(--shadow);font-size:14.5px}
+.wa ol{margin:8px 0 6px;padding-left:20px}
+@media (max-width:640px){.tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;margin:0 -20px 16px;padding:0 20px 4px}.tab{flex:none}}
 .hint.err{color:var(--err)}
 
-/* picker card */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 .picker{margin-top:18px;padding:20px;animation:rise .25s ease}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -79,6 +89,18 @@ svg.i{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .opt small{color:var(--muted);font-size:12px}
 .opt .tag{position:absolute;top:8px;right:8px;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--surface-2);color:var(--muted)}
 .opt.on .tag{background:var(--accent);color:#fff}
+.plbanner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);font-size:14px}
+.plbanner span{flex:1;min-width:180px}
+.plhead{display:flex;align-items:center;gap:8px;margin-top:18px}
+.plhead .spacer{flex:1}
+.pllist{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:8px}
+.plrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+.plrow:last-child{border-bottom:0}
+.plrow input{width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.plrow img{width:72px;height:41px;object-fit:cover;border-radius:6px;background:var(--surface-2);flex:none}
+.plrow .t{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plrow .n{color:var(--muted);font-size:12px;width:26px;text-align:right;flex:none}
+.plrow .d{color:var(--muted);font-size:12px;flex:none}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{padding:7px 13px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:600;font-size:13px}
@@ -96,7 +118,6 @@ svg.i{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .skel{background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:sh 1.2s infinite;border-radius:8px}
 @keyframes sh{to{background-position:-200% 0}}
 
-/* downloads */
 .qhead{display:flex;align-items:center;gap:10px;margin:34px 0 12px}
 .qhead h3{margin:0;font-size:16px}
 .count{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
@@ -137,7 +158,6 @@ svg.i{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-
 .legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin-top:6px}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
 
-/* settings popover & toast */
 .pop{position:absolute;right:20px;top:64px;width:300px;padding:16px;z-index:20}
 .pop h4{margin:0 0 12px;font-size:14px}
 .pop label{display:block;font-size:13px;margin-bottom:6px}
@@ -160,7 +180,7 @@ kbd{font:600 11px ui-monospace,monospace;padding:1px 5px;border-radius:4px;borde
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand"><div class="logo"><svg class="i" viewBox="0 0 24 24" style="width:17px;height:17px;stroke-width:2.6"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></div>YouTube Downloader</div>
+    <div class="brand"><div class="logo"><svg class="i" viewBox="0 0 24 24" style="width:17px;height:17px;stroke-width:2.6"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></div>AnySave</div>
     <div class="spacer"></div>
     <span id="ffPill" class="pill"><span class="dot"></span><span id="ffText">ffmpeg ready</span></span>
     <button class="iconbtn" id="setBtn" title="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
@@ -176,15 +196,28 @@ kbd{font:600 11px ui-monospace,monospace;padding:1px 5px;border-radius:4px;borde
   </div>
 
   <section class="hero">
-    <h1>Download videos <span>fast</span>.</h1>
-    <p>Paste a link, pick a quality, and it downloads in parallel pieces over many connections.</p>
+    <h1>Download videos from <span id="heroSite">any site</span>.</h1>
+    <p id="heroSub">Pick a site, paste a link, choose a quality. Downloads run in parallel pieces over many connections.</p>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Sites"></nav>
     <form class="search" id="form">
       <svg class="i muted" viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
-      <input id="url" placeholder="Paste a YouTube link" autocomplete="off" spellcheck="false" autofocus>
+      <input id="url" placeholder="Paste a video link" autocomplete="off" spellcheck="false" autofocus>
       <button type="button" class="btn btn-ghost" id="pasteBtn" title="Paste from clipboard"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg><span>Paste</span></button>
       <button class="btn btn-primary" id="fetchBtn">Fetch</button>
     </form>
+    <div class="wa hidden" id="wa">
+      <b>WhatsApp videos can't be downloaded from a link.</b> They're end-to-end encrypted inside your chats and have no public URL. To save one:
+      <ol>
+        <li>Open the chat and tap the video.</li>
+        <li>On iPhone tap Share, then Save. On Android tap the three-dot menu, then Save.</li>
+        <li>On WhatsApp Desktop or Web, hover the video and choose Download.</li>
+      </ol>
+      WhatsApp Channels videos work the same way: save them from the app.
+      <p style="margin:10px 0 0"><b>Saving WhatsApp Statuses?</b> Use the AnySave Android app. Its WhatsApp tab has a Status saver that shows the statuses you've viewed and saves them to your Gallery. A computer can't see your phone's statuses.</p>
+    </div>
+    <div class="switch hidden" id="switch"></div>
     <div class="hint muted" id="hint">Tip: paste a link and it loads automatically. Press <kbd>Enter</kbd> to fetch.</div>
+    <ul class="tips" id="tips"></ul>
   </section>
 
   <section id="loading" class="card picker hidden">
@@ -199,6 +232,18 @@ kbd{font:600 11px ui-monospace,monospace;padding:1px 5px;border-radius:4px;borde
       <div style="min-width:0"><h2 id="title"></h2><div class="muted" id="meta"></div></div>
     </div>
 
+    <div class="plbanner hidden" id="plBanner"><span>This video is part of a playlist.</span>
+      <button class="btn btn-ghost" id="plWhole" style="padding:6px 12px;font-size:13px">Download the whole playlist</button></div>
+    <div class="plbanner hidden" id="plBack"><span>Showing the whole playlist.</span>
+      <button class="btn btn-ghost" id="plOne" style="padding:6px 12px;font-size:13px">Just this video</button></div>
+
+    <div id="plWrap" class="hidden">
+      <div class="plhead"><div class="section-label" style="margin:0">Videos</div><span class="muted" id="plCount"></span><div class="spacer"></div>
+        <button class="btn btn-ghost" id="plAll" style="padding:5px 10px;font-size:13px">Select all</button>
+        <button class="btn btn-ghost" id="plNone" style="padding:5px 10px;font-size:13px">Select none</button></div>
+      <div class="pllist" id="plList"></div>
+    </div>
+
     <div class="section-label">What to download</div>
     <div class="seg" id="modes">
       <button data-mode="both" class="on"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg><span>Video + Audio</span></button>
@@ -210,7 +255,7 @@ kbd{font:600 11px ui-monospace,monospace;padding:1px 5px;border-radius:4px;borde
       <div class="section-label">Quality</div>
       <div class="grid" id="qualities"></div>
       <label class="toggle"><input type="checkbox" id="compat" checked><span class="sw"></span>
-        <span>Most compatible (H.264 MP4)<small>Plays in QuickTime, Photos and on iPhone. YouTube only offers H.264 up to 1080p, so higher picks use VP9/AV1.</small></span></label>
+        <span>Most compatible (H.264 MP4)<small>Plays in QuickTime, Photos and on iPhone. Some sites (like YouTube) only offer H.264 up to 1080p, so higher picks use VP9/AV1.</small></span></label>
     </div>
 
     <div id="audioOpts" class="hidden">
@@ -238,7 +283,7 @@ kbd{font:600 11px ui-monospace,monospace;padding:1px 5px;border-radius:4px;borde
     <button class="btn btn-ghost" id="clearBtn" style="padding:6px 10px;font-size:13px">Clear finished</button></div>
   <div id="jobs"><div class="empty" id="empty">Your downloads will show up here, with live speed and a map of every piece as it arrives.</div></div>
 
-  <p class="legal">Only download videos you own or have permission to download.</p>
+  <p class="legal">Only download videos you own or have permission to download. Private posts, login-only content and DRM-protected videos are not supported.</p>
 </div>
 
 <script>
@@ -248,29 +293,31 @@ const ICON = {
   folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   play:'<path d="m7 4 13 8-13 8z"/>',
   trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+  download:'<path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/>',
   retry:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
 };
 const svg = n => `<svg class="i" viewBox="0 0 24 24">${ICON[n]}</svg>`;
-const state = {info:null, url:"", mode:"both", height:null, afmt:"mp3", abr:"192"};
+const state = {info:null, url:"", mode:"both", height:null, afmt:"mp3", abr:"192", picked:new Set(), single:null};
 let conn = 16;
 try { conn = +localStorage.getItem("conn") || 16; } catch {}
 
-/* ---------- helpers ---------- */
 function bytes(n){ if(!n) return "0 B"; const u=["B","KB","MB","GB","TB"]; let i=Math.min(4,Math.floor(Math.log(n)/Math.log(1024))); return (n/1024**i).toFixed(i>1?1:0)+" "+u[i]; }
 function dur(s){ if(!s) return ""; s=Math.round(s); const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=String(s%60).padStart(2,"0"); return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`; }
 function eta(s){ if(s==null||!isFinite(s)) return "–"; s=Math.round(s); if(s<60) return s+"s"; if(s<3600) return Math.floor(s/60)+"m "+String(s%60).padStart(2,"0")+"s"; return Math.floor(s/3600)+"h "+Math.floor(s%3600/60)+"m"; }
 function views(n){ if(!n) return ""; return (n>=1e9?(n/1e9).toFixed(1)+"B":n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":n)+" views"; }
 function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.append(t); setTimeout(()=>t.remove(),3200); }
+const REMOTE = !["localhost","127.0.0.1","::1","[::1]"].includes(location.hostname);
+let TOKEN = new URLSearchParams(location.search).get("token") || "";
+try { if(TOKEN) localStorage.setItem("anysave-token", TOKEN); else TOKEN = localStorage.getItem("anysave-token") || ""; } catch {}
 async function api(path, opts={}){
-  const r = await fetch(path, {headers:{"Content-Type":"application/json"}, ...opts, body: opts.body?JSON.stringify(opts.body):undefined});
+  const r = await fetch(path, {headers:{"Content-Type":"application/json", "X-AnySave-Token": TOKEN}, ...opts, body: opts.body?JSON.stringify(opts.body):undefined});
   const j = await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(j.error || "Request failed");
   return j;
 }
 const isLink = s => /^https?:\/\/\S+$/i.test(s.trim());
 
-/* ---------- status & settings ---------- */
 $("#conn").value = conn; $("#connVal").textContent = conn;
 $("#conn").oninput = e => { conn=+e.target.value; $("#connVal").textContent=conn; try{localStorage.setItem("conn",conn)}catch{} };
 $("#setBtn").onclick = e => { e.stopPropagation(); $("#pop").classList.toggle("hidden"); };
@@ -280,18 +327,101 @@ api("/api/status").then(s => {
   if(!s.ffmpeg){ $("#ffPill").classList.add("warn"); $("#ffText").textContent="ffmpeg missing: quality limited"; }
 }).catch(()=>{});
 
-/* ---------- fetch ---------- */
+const SITES = {
+  all: { name:"All sites", color:"#6d5efc", hero:"any site", sub:"Paste a link from any supported site and it jumps to the right tab.",
+    placeholder:"Paste a video link from any site", hosts:[],
+    tips:["Instagram, Facebook, TikTok, X, Bluesky, LinkedIn, Reddit, Pinterest, YouTube", "and 1,000+ other sites"] },
+  instagram: { name:"Instagram", color:"#d62976", sub:"Reels and video posts from public accounts.",
+    placeholder:"https://www.instagram.com/reel/…", hosts:["instagram.com","instagr.am"],
+    tips:["Tap ⋯ on a Reel or post, then Copy link", "Stories and private accounts need a login and won't work", "Carousels download the first video"] },
+  facebook: { name:"Facebook", color:"#1877f2", sub:"Public videos, Reels and Watch.",
+    placeholder:"https://www.facebook.com/reel/… or fb.watch/…", hosts:["facebook.com","fb.watch","fb.com"],
+    tips:["Tap Share, then Copy link", "fb.watch short links work", "Private groups and friends-only posts won't work"] },
+  tiktok: { name:"TikTok", color:"#fe2c55", sub:"Short videos.",
+    placeholder:"https://www.tiktok.com/@user/video/…", hosts:["tiktok.com"],
+    tips:["Tap Share, then Copy link", "vm.tiktok.com short links work", "Photo slideshows aren't videos"] },
+  x: { name:"X / Twitter", color:"#1d9bf0", sub:"Videos and GIFs in public posts.",
+    placeholder:"https://x.com/user/status/…", hosts:["x.com","twitter.com","t.co"],
+    tips:["Open the post, tap Share, then Copy link", "Posts from protected accounts won't work"] },
+  bluesky: { name:"Bluesky", color:"#1185fe", sub:"Videos in posts.",
+    placeholder:"https://bsky.app/profile/…/post/…", hosts:["bsky.app"],
+    tips:["Tap ⋯ on a post, then Copy link to post"] },
+  linkedin: { name:"LinkedIn", color:"#0a66c2", sub:"Videos in public posts.",
+    placeholder:"https://www.linkedin.com/posts/…", hosts:["linkedin.com","lnkd.in"],
+    tips:["Tap ⋯ on the post, then Copy link to post", "Connections-only posts and LinkedIn Learning won't work"] },
+  reddit: { name:"Reddit", color:"#ff4500", sub:"Video posts, with sound merged back in.",
+    placeholder:"https://www.reddit.com/r/…/comments/…", hosts:["reddit.com","redd.it"],
+    tips:["Tap Share, then Copy link", "Reddit stores sound separately; ffmpeg joins it back"] },
+  pinterest: { name:"Pinterest", color:"#e60023", sub:"Video pins and Idea pins.",
+    placeholder:"https://www.pinterest.com/pin/…", hosts:["pinterest.com","pin.it","pinterest.co.uk","pinterest.ca","pinterest.de","pinterest.fr","pinterest.es","pinterest.it","pinterest.com.au","pinterest.jp","pinterest.co.in"],
+    tips:["Tap Share, then Copy link", "pin.it short links work", "Image-only pins have no video"] },
+  youtube: { name:"YouTube", color:"#e62117", sub:"Videos and Shorts, up to 4K/8K.",
+    placeholder:"https://www.youtube.com/watch?v=… or /shorts/…", hosts:["youtube.com","youtu.be"],
+    tips:["Share, then Copy link, or copy the address bar", "A video inside a playlist downloads just that video", "Members-only and private videos won't work"] },
+  whatsapp: { name:"WhatsApp", color:"#25d366", sub:"WhatsApp videos have no public link.",
+    placeholder:"", hosts:["whatsapp.com","wa.me"], tips:[] },
+};
+function siteFor(url){
+  let host; try { host = new URL(url.trim()).hostname.toLowerCase(); } catch { return null; }
+  for (const [id, s] of Object.entries(SITES))
+    if (s.hosts.some(h => host===h || host.endsWith("."+h))) return id;
+  return null;
+}
+let tab = "all";
+function renderTabs(){
+  $("#tabs").innerHTML = Object.entries(SITES).map(([id,s]) =>
+    `<button type="button" class="tab" role="tab" data-id="${id}" style="--c:${s.color}" aria-selected="${id===tab}"><span class="tdot"></span>${esc(s.name)}</button>`).join("");
+  document.querySelectorAll("#tabs .tab").forEach(b => b.onclick = () => selectTab(b.dataset.id, true));
+}
+function selectTab(id, clear){
+  if(!SITES[id]) id = "all";
+  tab = id; const s = SITES[id];
+  document.documentElement.style.setProperty("--site", s.color);
+  $("#heroSite").textContent = s.hero || s.name;
+  $("#heroSub").textContent = s.sub;
+  $("#url").placeholder = s.placeholder;
+  $("#tips").innerHTML = s.tips.map(t => `<li>${esc(t)}</li>`).join("");
+  const wa = id === "whatsapp";
+  $("#wa").classList.toggle("hidden", !wa); $("#form").classList.toggle("hidden", wa); $("#hint").classList.toggle("hidden", wa);
+  $("#switch").classList.add("hidden");
+  if(clear){ $("#url").value = ""; $("#picker").classList.add("hidden"); $("#hint").className="hint muted"+(wa?" hidden":""); $("#hint").textContent=""; }
+  document.querySelectorAll("#tabs .tab").forEach(b => b.setAttribute("aria-selected", b.dataset.id===id));
+  document.querySelector(`#tabs .tab[data-id="${id}"]`)?.scrollIntoView({block:"nearest", inline:"nearest"});
+  history.replaceState(null, "", "#"+id);
+  try { localStorage.setItem("anysave-tab", id); } catch {}
+}
+function checkMatch(){
+  const url = $("#url").value.trim(), found = siteFor(url);
+  $("#switch").classList.add("hidden");
+  if(!url || !found || found === tab) return true;
+  if(tab === "all"){ selectTab(found, false); return true; }
+  $("#switch").innerHTML = `This looks like a ${esc(SITES[found].name)} link.<button type="button">Switch to ${esc(SITES[found].name)}</button>`;
+  $("#switch button").onclick = () => { selectTab(found, false); checkMatch(); lookup(); };
+  $("#switch").classList.remove("hidden");
+  return false;
+}
+$("#url").addEventListener("input", checkMatch);
+{ let start = location.hash.slice(1);
+  if(!SITES[start]){ try { start = localStorage.getItem("anysave-tab") || "all"; } catch { start = "all"; } }
+  renderTabs(); selectTab(start, false); }
+
 let fetching = false;
-async function lookup(){
-  const url = $("#url").value.trim();
+async function lookup(opts={}){
+  const url = opts.url || $("#url").value.trim();
   if(!url || fetching) return;
   if(!isLink(url)){ $("#hint").className="hint err"; $("#hint").textContent="That doesn't look like a link."; return; }
+  if(!checkMatch()) return;
   fetching = true; $("#fetchBtn").disabled = true;
   $("#hint").className="hint muted"; $("#hint").textContent="Looking up the video...";
   $("#picker").classList.add("hidden"); $("#loading").classList.remove("hidden");
   try{
-    const info = await api("/api/info", {method:"POST", body:{url}});
+    const info = await api("/api/info", {method:"POST", body:{url, playlist:!!opts.playlist}});
+    if(info.type==="playlist"){
+      info.qualities = GENERIC_Q.map(h => ({height:h, label:h+"p", tag:h>=2160?"4K":h>=1440?"2K":h>=720?"HD":"", size:{}, has_h264:true, generic:true}));
+      state.picked = new Set(info.entries.map((_,i)=>i));
+    }
     state.info = info; state.url = url;
+    state.single = opts.single || (info.type==="video" && info.playlist_url ? {url, playlist_url:info.playlist_url} : null);
     state.height = info.qualities.find(q=>q.height<=1080)?.height ?? info.qualities[0]?.height ?? null;
     renderPicker();
     $("#hint").textContent = "";
@@ -302,21 +432,39 @@ async function lookup(){
   }
 }
 $("#form").onsubmit = e => { e.preventDefault(); lookup(); };
+const GENERIC_Q = [2160,1440,1080,720,480,360];
+$("#plWhole").onclick = () => lookup({url:state.single.playlist_url, playlist:true, single:state.single});
+$("#plOne").onclick = () => lookup({url:state.single.url});
+$("#plAll").onclick = () => { state.picked = new Set(state.info.entries.map((_,i)=>i)); renderList(); summary(); };
+$("#plNone").onclick = () => { state.picked = new Set(); renderList(); summary(); };
 $("#url").addEventListener("paste", () => setTimeout(()=>{ if(isLink($("#url").value)) lookup(); }, 0));
 $("#pasteBtn").onclick = async () => {
   try{ const t = await navigator.clipboard.readText(); $("#url").value = t.trim(); if(isLink(t)) lookup(); }
   catch{ $("#url").focus(); toast("Press ⌘V / Ctrl+V to paste"); }
 };
 
-/* ---------- picker ---------- */
 function renderPicker(){
   const i = state.info;
   $("#thumb").src = i.thumbnail || ""; $("#thumb").style.visibility = i.thumbnail ? "" : "hidden"; $("#dur").textContent = dur(i.duration); $("#dur").style.display = i.duration?"":"none";
   $("#title").textContent = i.title || "Untitled";
-  $("#meta").textContent = [i.uploader, views(i.view_count)].filter(Boolean).join(" · ");
+  const isPl = i.type==="playlist";
+  $("#meta").textContent = [i.site, isPl?"Playlist · "+i.count+" videos":"", i.uploader, views(i.view_count)].filter(Boolean).join(" · ");
+  $("#plWrap").classList.toggle("hidden", !isPl);
+  $("#plBanner").classList.toggle("hidden", !(state.single && !isPl));
+  $("#plBack").classList.toggle("hidden", !(state.single && isPl));
+  if(isPl) renderList();
   renderQualities(); syncMode();
   $("#picker").classList.remove("hidden");
 }
+function renderList(){
+  const es = state.info.entries;
+  $("#plList").innerHTML = es.map((e,i) => `<label class="plrow"><input type="checkbox" data-i="${i}" ${state.picked.has(i)?"checked":""}>
+    <span class="n">${i+1}</span>${e.thumbnail?`<img src="${esc(e.thumbnail)}" alt="" loading="lazy">`:""}
+    <span class="t" title="${esc(e.title)}">${esc(e.title||"Untitled")}</span><span class="d">${dur(e.duration)}</span></label>`).join("");
+  $("#plList").querySelectorAll("input").forEach(c => c.onchange = () => { c.checked ? state.picked.add(+c.dataset.i) : state.picked.delete(+c.dataset.i); updateCountLabel(); summary(); });
+  updateCountLabel();
+}
+function updateCountLabel(){ $("#plCount").textContent = `${state.picked.size} of ${state.info.entries.length} selected`; }
 function sizeFor(q){
   const key = (state.mode==="video"?"video":"both") + ($("#compat").checked?"_compat":"");
   return q.size[key];
@@ -326,6 +474,8 @@ function renderQualities(){
   if(!qs.length){ box.innerHTML = '<div class="muted" style="grid-column:1/-1">Only one quality is available for this video.</div>'; return; }
   const compat = $("#compat").checked;
   box.innerHTML = qs.map(q => {
+    if(q.generic) return `<button class="opt ${q.height===state.height?"on":""}" data-h="${q.height}">
+      ${q.tag?`<span class="tag">${q.tag}</span>`:""}<b>${q.label}</b><small>or best below it</small></button>`;
     const s = sizeFor(q), note = compat && !q.has_h264 ? (q.codec||"").toUpperCase().replace("VP09","VP9").replace("AV01","AV1") : "";
     return `<button class="opt ${q.height===state.height?"on":""}" data-h="${q.height}">
       ${q.tag?`<span class="tag">${q.tag}</span>`:""}<b>${q.label}${q.hdr?" HDR":""}</b>
@@ -343,6 +493,16 @@ function syncMode(){
 }
 function summary(){
   const i = state.info; if(!i) return;
+  if(i.type==="playlist"){
+    const n = state.picked.size;
+    $("#sumMain").textContent = state.mode==="audio" ? `${state.afmt.toUpperCase()}${["wav","flac"].includes(state.afmt)?"":" · "+state.abr+" kbps"}`
+      : `Up to ${state.height}p · MP4${state.mode==="video"?" · no sound":""}`;
+    $("#sumSub").textContent = n ? `${n} video${n>1?"s":""} will be queued` : "Pick at least one video";
+    $("#dlBtn").lastChild.textContent = n ? `Download ${n}` : "Download";
+    $("#dlBtn").disabled = !n;
+    return;
+  }
+  $("#dlBtn").lastChild.textContent = "Download"; $("#dlBtn").disabled = false;
   if(state.mode==="audio"){
     const lossless = ["wav","flac"].includes(state.afmt);
     $("#sumMain").textContent = `${state.afmt.toUpperCase()}${lossless?"":" · "+state.abr+" kbps"}`;
@@ -367,25 +527,33 @@ chipGroup("#afmt","afmt"); chipGroup("#abr","abr");
 $("#dlBtn").onclick = async () => {
   $("#dlBtn").disabled = true;
   try{
-    await api("/api/download", {method:"POST", body:{
-      url:state.url, mode:state.mode, height:state.height, compat:$("#compat").checked,
-      audio_format:state.afmt, audio_bitrate:state.abr, connections:conn,
-      title:state.info.title, thumbnail:state.info.thumbnail }});
-    toast("Added to downloads");
+    const base = {mode:state.mode, height:state.height, compat:$("#compat").checked,
+      audio_format:state.afmt, audio_bitrate:state.abr, connections:conn};
+    if(state.info.type==="playlist"){
+      const picks = state.info.entries.filter((_,i)=>state.picked.has(i));
+      let ok = 0;
+      for(const e of picks){
+        try{ await api("/api/download", {method:"POST", body:{...base, url:e.url, title:e.title, thumbnail:e.thumbnail}}); ok++; }
+        catch(err){ console.warn(e.url, err); }
+      }
+      toast(ok===picks.length ? `Queued ${ok} video${ok>1?"s":""}` : `Queued ${ok} of ${picks.length}. Some links were rejected.`);
+    } else {
+      await api("/api/download", {method:"POST", body:{...base, url:state.url, title:state.info.title, thumbnail:state.info.thumbnail}});
+      toast("Added to downloads");
+    }
     poll(true);
     document.querySelector(".qhead").scrollIntoView({behavior:"smooth", block:"start"});
   }catch(err){ toast(err.message); }
-  finally{ setTimeout(()=>$("#dlBtn").disabled=false, 600); }
+  finally{ setTimeout(()=>{ $("#dlBtn").disabled=false; summary(); }, 600); }
 };
 
-/* ---------- downloads list ---------- */
 const cards = new Map();
 const STATUS_TEXT = {queued:"Queued", preparing:"Preparing", downloading:"Downloading", processing:"Finishing", done:"Done", error:"Failed", cancelled:"Cancelled"};
 const MAX_CELLS = 320;
 
 function pieceCells(map){
   let cells = map;
-  if(map.length > MAX_CELLS){            // squeeze big files into a fixed-size map
+  if(map.length > MAX_CELLS){
     const k = map.length / MAX_CELLS; cells = "";
     for(let c=0;c<MAX_CELLS;c++){
       const s = map.slice(Math.floor(c*k), Math.floor((c+1)*k)||Math.floor(c*k)+1);
@@ -410,6 +578,7 @@ function card(j){
     const a = b.dataset.a;
     try{
       if(a==="cancel") await api(`/api/jobs/${j.id}/cancel`, {method:"POST"});
+      if(a==="save"){ location.href = `/api/jobs/${j.id}/file?token=${encodeURIComponent(TOKEN)}`; return; }
       if(a==="reveal" || a==="open") await api(`/api/jobs/${j.id}/${a}`, {method:"POST"});
       if(a==="remove"){ await api(`/api/jobs/${j.id}`, {method:"DELETE"}); el.remove(); cards.delete(j.id); updateCount(); }
       poll(true);
@@ -428,7 +597,8 @@ function update(el, j){
   el.querySelector(".msg").textContent = j.status==="done" ? j.filename : (j.engine==="yt-dlp" && j.status==="downloading" ? "fallback mode" : "");
 
   const active = ["queued","preparing","downloading","processing"].includes(j.status);
-  const acts = j.status==="done" ? [["open","play","Open"],["reveal","folder","Show in Finder"],["remove","trash","Remove from list"]]
+  const acts = j.status==="done" ? (REMOTE ? [["save","download","Save to this device"],["remove","trash","Remove from list"]]
+                                           : [["open","play","Open"],["reveal","folder","Show in Finder"],["remove","trash","Remove from list"]])
              : active ? [["cancel","cancel","Cancel"]] : [["remove","trash","Remove from list"]];
   const actKey = acts.map(a=>a[0]).join();
   if(c.actKey !== actKey){ el.querySelector(".jact").innerHTML = acts.map(([a,i,t])=>`<button data-a="${a}" title="${t}">${svg(i)}</button>`).join(""); }

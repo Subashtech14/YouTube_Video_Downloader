@@ -1,2 +1,35 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.swp
+*.tmp
+*.log
+
+# Python (web)
 .venv/
+venv/
 __pycache__/
+*.py[cod]
+
+# Android / Gradle build output
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+
+# Gradle user home accidentally placed in android/gradle — keep only the wrapper
+android/gradle/*
+!android/gradle/wrapper/
+android/gradle/wrapper/*
+!android/gradle/wrapper/gradle-wrapper.jar
+!android/gradle/wrapper/gradle-wrapper.properties
+
+# iOS / Xcode
+ios/build/
+ios/DerivedData/
+xcuserdata/
+Files/*.apk
